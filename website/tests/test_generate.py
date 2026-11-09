@@ -6,7 +6,14 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from generate import SiteError, find_topics, pretty_name  # noqa: E402
+from generate import (  # noqa: E402
+    SiteError,
+    find_topics,
+    first_post,
+    main,
+    pretty_name,
+    write_sources,
+)
 
 
 def make_nb(path: Path, cells=()) -> dict:
@@ -67,3 +74,86 @@ def test_index_notebook_rejected(tmp_path):
     make_nb(tmp_path / "a/index.ipynb")
     with pytest.raises(SiteError, match="a/index.ipynb"):
         find_topics(tmp_path)
+
+
+CODE_CELL = {
+    "cell_type": "code",
+    "execution_count": None,
+    "metadata": {},
+    "outputs": [],
+    "source": ["print(1)"],
+}
+
+
+def test_write_sources_post(tmp_path):
+    repo, out = tmp_path / "repo", tmp_path / "out"
+    original = make_nb(repo / "a-b/my_post.ipynb", [CODE_CELL])
+    write_sources(repo, out)
+    nb = json.loads((out / "a-b/my_post.ipynb").read_text())
+    assert nb["cells"][0]["source"] == ["# My Post"]
+    assert nb["cells"][1] == CODE_CELL
+    assert "id" not in nb["cells"][0]
+    assert json.loads((repo / "a-b/my_post.ipynb").read_text()) == original
+
+
+def test_write_sources_title_cell_id_for_nbformat_45(tmp_path):
+    repo, out = tmp_path / "repo", tmp_path / "out"
+    path = repo / "a/x.ipynb"
+    make_nb(path)
+    nb = json.loads(path.read_text())
+    nb["nbformat_minor"] = 5
+    path.write_text(json.dumps(nb))
+    write_sources(repo, out)
+    assert json.loads((out / "a/x.ipynb").read_text())["cells"][0]["id"] == "site-title"
+
+
+def test_write_sources_indexes(tmp_path):
+    repo, out = tmp_path / "repo", tmp_path / "out"
+    for p in ["a/x.ipynb", "a/sub/y.ipynb", "b/z.ipynb"]:
+        make_nb(repo / p)
+    write_sources(repo, out)
+    a = (out / "a/index.md").read_text()
+    assert a.startswith("# A\n")
+    assert a.index("\nx\n") < a.index("\nsub/index\n")
+    assert (out / "a/sub/index.md").read_text().startswith("# Sub\n")
+    root = (out / "index.md").read_text()
+    assert 'url=a/x.html"' in root
+    assert ":hidden:" in root and "\na/index\n" in root and "\nb/index\n" in root
+
+
+def test_first_post_topic_with_only_subtopics(tmp_path):
+    for p in ["a/sub/y.ipynb", "b/z.ipynb"]:
+        make_nb(tmp_path / p)
+    assert first_post(find_topics(tmp_path)) == Path("a/sub/y.ipynb")
+
+
+def test_rerun_removes_stale(tmp_path):
+    repo, out = tmp_path / "repo", tmp_path / "out"
+    make_nb(repo / "a/x.ipynb")
+    make_nb(repo / "a/y.ipynb")
+    write_sources(repo, out)
+    (repo / "a/x.ipynb").unlink()
+    write_sources(repo, out)
+    assert not (out / "a/x.ipynb").exists()
+    assert (out / "a/y.ipynb").exists()
+
+
+def test_empty_notebook(tmp_path):
+    repo, out = tmp_path / "repo", tmp_path / "out"
+    make_nb(repo / "a/empty.ipynb")
+    write_sources(repo, out)
+    cells = json.loads((out / "a/empty.ipynb").read_text())["cells"]
+    assert cells == [{"cell_type": "markdown", "metadata": {}, "source": ["# Empty"]}]
+
+
+def test_main_reports_error(tmp_path, capsys):
+    assert main([str(tmp_path), str(tmp_path / "out")]) == 1
+    assert "no notebooks found" in capsys.readouterr().err
+
+
+def test_write_sources_refuses_to_wipe_repo(tmp_path):
+    make_nb(tmp_path / "a/x.ipynb")
+    for out in [tmp_path, tmp_path.parent]:
+        with pytest.raises(SiteError, match="output"):
+            write_sources(tmp_path, out)
+    assert (tmp_path / "a/x.ipynb").exists()
