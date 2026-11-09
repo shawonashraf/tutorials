@@ -18,6 +18,7 @@ POSTS = [
     "beta-gamma/three.ipynb",
     "beta-gamma/My VAE notes.ipynb",
     "deep/l1/l2/l3/l4/l5/bottom_post.ipynb",
+    "alpha/zz_own_h1.ipynb",
 ]
 
 
@@ -28,7 +29,8 @@ def site(tmp_path_factory) -> Path:
     for p in POSTS:
         path = repo / p
         path.parent.mkdir(parents=True, exist_ok=True)
-        cell = {"cell_type": "markdown", "metadata": {}, "source": ["## Section\n", "text"]}
+        text = "# Own Title\n\n# Another H1" if "own_h1" in p else "## Section\ntext"
+        cell = {"cell_type": "markdown", "metadata": {}, "source": [text]}
         path.write_text(json.dumps({"cells": [cell], "metadata": {}, "nbformat": 4, "nbformat_minor": 4}))
     write_sources(repo, src)
     assert build_main(["-q", "-c", str(WEBSITE_DIR), str(src), str(out)]) == 0
@@ -52,3 +54,8 @@ def test_post_page(site):
 def test_topic_and_root_pages(site):
     assert not soup(site / "alpha/index.html").find("a", href=re.compile("/edit/"))
     assert "url=alpha/one.html" in (site / "index.html").read_text()
+
+
+def test_topic_page_lists_each_post_once(site):
+    links = [a.get_text(strip=True) for a in soup(site / "alpha/index.html").select("article .toctree-wrapper a")]
+    assert links == ["One", "Two", "Zz Own H1"]

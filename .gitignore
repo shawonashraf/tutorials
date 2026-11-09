@@ -5,3 +5,4 @@
 website/_src/
 website/_build/
 __pycache__/
+website/jupyter_execute/

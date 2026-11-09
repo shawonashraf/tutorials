@@ -157,3 +157,44 @@ def test_write_sources_refuses_to_wipe_repo(tmp_path):
         with pytest.raises(SiteError, match="output"):
             write_sources(tmp_path, out)
     assert (tmp_path / "a/x.ipynb").exists()
+
+
+def md(*lines: str) -> dict:
+    return {"cell_type": "markdown", "metadata": {}, "source": ["\n".join(lines)]}
+
+
+def test_notebook_h1_headings_demoted_below_title(tmp_path):
+    repo, out = tmp_path / "repo", tmp_path / "out"
+    make_nb(
+        repo / "a/x.ipynb",
+        [md("# Own Title", "text", "## Sub", "```", "# not a heading", "```"), md("Setext", "===="), CODE_CELL],
+    )
+    write_sources(repo, out)
+    cells = json.loads((out / "a/x.ipynb").read_text())["cells"]
+    assert cells[0]["source"] == ["# X"]
+    assert "".join(cells[1]["source"]) == "\n".join(
+        ["## Own Title", "text", "### Sub", "```", "# not a heading", "```"]
+    )
+    assert "".join(cells[2]["source"]) == "Setext\n----"
+    assert cells[3] == CODE_CELL
+
+
+def test_headings_kept_when_notebook_has_no_h1(tmp_path):
+    repo, out = tmp_path / "repo", tmp_path / "out"
+    make_nb(repo / "a/x.ipynb", [md("## Sub", "text")])
+    write_sources(repo, out)
+    assert "".join(json.loads((out / "a/x.ipynb").read_text())["cells"][1]["source"]) == "## Sub\ntext"
+
+
+def test_write_sources_refuses_non_generated_output(tmp_path):
+    repo = tmp_path / "repo"
+    make_nb(repo / "a/x.ipynb")
+    keep = tmp_path / "keep"
+    keep.mkdir()
+    (keep / "precious.ipynb").write_text("{}")
+    with pytest.raises(SiteError, match="output"):
+        write_sources(repo, keep)
+    assert (keep / "precious.ipynb").exists()
+    with pytest.raises(SiteError, match="output"):
+        write_sources(repo, repo / "a")
+    assert (repo / "a/x.ipynb").exists()

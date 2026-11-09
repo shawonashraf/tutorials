@@ -6,6 +6,7 @@ dependencies = []
 
 [dependency-groups]
 site = [
+    "markdown-it-py>=4.2.0",
     "myst-nb>=1.4.0",
     "pydata-sphinx-theme>=0.24.0",
     "pytest>=9.2.0",

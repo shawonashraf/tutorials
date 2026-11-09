@@ -1383,6 +1383,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 site = [
+    { name = "markdown-it-py" },
     { name = "myst-nb" },
     { name = "pydata-sphinx-theme" },
     { name = "pytest" },
@@ -1393,6 +1394,7 @@ site = [
 
 [package.metadata.requires-dev]
 site = [
+    { name = "markdown-it-py", specifier = ">=4.2.0" },
     { name = "myst-nb", specifier = ">=1.4.0" },
     { name = "pydata-sphinx-theme", specifier = ">=0.24.0" },
     { name = "pytest", specifier = ">=9.2.0" },
