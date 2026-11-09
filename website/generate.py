@@ -10,6 +10,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 SKIP_DIRS = {"website"}
+# Generated pages have no file in the repo, so drop the right sidebar
+# (its "Edit on GitHub" link would 404).
+GENERATED_PAGE = "---\nhtml_theme.sidebar_secondary.remove: true\n---\n\n"
 
 
 class SiteError(Exception):
@@ -82,7 +85,8 @@ def _write_topic(repo: Path, out: Path, topic: Topic) -> None:
         _write_topic(repo, out, sub)
     entries = [p.stem for p in topic.posts] + [f"{s.dir.name}/index" for s in topic.subtopics]
     (out / topic.dir / "index.md").write_text(
-        f"# {pretty_name(topic.dir.name)}\n\n"
+        GENERATED_PAGE
+        + f"# {pretty_name(topic.dir.name)}\n\n"
         "```{toctree}\n:maxdepth: 1\n:titlesonly:\n\n" + "\n".join(entries) + "\n```\n"
     )
 
@@ -98,7 +102,8 @@ def write_sources(repo: Path, out: Path) -> None:
     for topic in topics:
         _write_topic(repo, out, topic)
     (out / "index.md").write_text(
-        "# Tutorials\n\n"
+        GENERATED_PAGE
+        + "# Tutorials\n\n"
         f'```{{raw}} html\n<meta http-equiv="refresh" content="0; url={start}">\n```\n\n'
         "```{toctree}\n:hidden:\n\n"
         + "\n".join(f"{t.dir.as_posix()}/index" for t in topics)

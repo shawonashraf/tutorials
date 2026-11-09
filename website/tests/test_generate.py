@@ -113,9 +113,9 @@ def test_write_sources_indexes(tmp_path):
         make_nb(repo / p)
     write_sources(repo, out)
     a = (out / "a/index.md").read_text()
-    assert a.startswith("# A\n")
+    assert "\n# A\n" in a
     assert a.index("\nx\n") < a.index("\nsub/index\n")
-    assert (out / "a/sub/index.md").read_text().startswith("# Sub\n")
+    assert "\n# Sub\n" in (out / "a/sub/index.md").read_text()
     root = (out / "index.md").read_text()
     assert 'url=a/x.html"' in root
     assert ":hidden:" in root and "\na/index\n" in root and "\nb/index\n" in root
