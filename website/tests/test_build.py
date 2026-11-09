@@ -59,3 +59,10 @@ def test_topic_and_root_pages(site):
 def test_topic_page_lists_each_post_once(site):
     links = [a.get_text(strip=True) for a in soup(site / "alpha/index.html").select("article .toctree-wrapper a")]
     assert links == ["One", "Two", "Zz Own H1"]
+
+
+def test_ursine_theme_loaded(site):
+    hrefs = [l.get("href", "") for l in soup(site / "alpha/one.html").find_all("link", rel="stylesheet")]
+    assert any(h.endswith("_static/ursine.css") or "_static/ursine.css?" in h for h in hrefs)
+    assert any(h.startswith("https://fonts.googleapis.com/css2?family=Fira+Mono") for h in hrefs)
+    assert (site / "_static/ursine.css").exists()

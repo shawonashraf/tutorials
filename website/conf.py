@@ -9,6 +9,14 @@ templates_path = ["_templates"]
 
 html_theme = "pydata_sphinx_theme"
 html_title = "Tutorials"
+# Ursine palette and fonts, shared with the blog.
+html_static_path = ["_static"]
+html_css_files = [
+    "https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;700"
+    "&family=Open+Sans:ital,wght@0,400;0,600;1,400;1,600"
+    "&family=Roboto+Slab:wght@200;400&display=swap",
+    "ursine.css",
+]
 html_theme_options = {
     "navbar_center": [],
     "icon_links": [
