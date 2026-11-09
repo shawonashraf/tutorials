@@ -1,3 +1,7 @@
 .DS_Store
 .vscode/
 .idea/
+.venv/
+website/_src/
+website/_build/
+__pycache__/
